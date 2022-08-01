@@ -16,6 +16,8 @@ import (
 	v1 "github.com/prysmaticlabs/prysm/v3/proto/eth/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
