@@ -483,3 +483,39 @@ func spawnCountdownIfPreGenesis(ctx context.Context, genesisTime time.Time, db d
 	}
 	go slots.CountdownToGenesis(ctx, genesisTime, uint64(gState.NumValidators()), gRoot)
 }
+
+type dbDataAvailability struct {
+	db db.ReadOnlyDatabase
+}
+
+func NewDBDataAvailability(db db.ReadOnlyDatabase) f.DataAvailability {
+	return &dbDataAvailability{db}
+}
+
+func (d *dbDataAvailability) IsDataAvailable(ctx context.Context, root [32]byte) error {
+	b, err := d.db.Block(ctx, root)
+	if err != nil {
+		return err
+	}
+	if err := wrapper.BeaconBlockIsNil(b); err != nil {
+		return err
+	}
+	if !blob.BlockContainsKZGs(b.Block()) {
+		// no sidecar referenced. We have all the data we need
+		return nil
+	}
+
+	kzgs, err := b.Block().Body().BlobKzgs()
+	if err != nil {
+		// shouldn't happen if blob contains kzgs
+		return err
+	}
+	sidecar, err := d.db.BlobsSidecar(ctx, root)
+	if err != nil {
+		return err
+	}
+	if sidecar.BeaconBlockSlot != b.Block().Slot() {
+		return errors.New("blobs sidecar is unavailable")
+	}
+	return blob.ValidateBlobsSidecar(b.Block().Slot(), root, kzgs, sidecar)
+}
