@@ -6,7 +6,7 @@ func UseEIP4844NetworkConfig() {
 	cfg.MinEpochsForBlobsSidecarsRequest = 1200 // 1 day
 	cfg.ContractDeploymentBlock = 0             // deposit contract is a predeploy
 	cfg.BootstrapNodes = []string{
-		"enr:-JG4QFKX3vHhpsIZ5gwHaStj8k9Z4OudBunL8srykq4yTfL-cwX03zyOCGRXVgefXep3wUb3liC26grESiHK6Wn-7zqGAYI-FNCugmlkgnY0gmlwhCJ7uEyJc2VjcDI1NmsxoQJpeftU6RbmIhcFllICznlAMJXL3EwHEGhn73_Gk0wrCYN0Y3CCMsiDdWRwgi7g",
+		"enr:-MK4QLij8YaVQ6fIi09rDuD9fufxBlCZRXwfM1q6SbNJfy5ZZdAvtlnsfqhIeI0IqeOZdaPExVCfZfR4JJTIuKXFR76GAYJGrqHnh2F0dG5ldHOIAAAAAAAAAACEZXRoMpBCynldgwAP_QMAAAAAAAAAgmlkgnY0gmlwhCJ7uEyJc2VjcDI1NmsxoQJpeftU6RbmIhcFllICznlAMJXL3EwHEGhn73_Gk0wrCYhzeW5jbmV0cwCDdGNwgjLIg3VkcIIu4A",
 		// TODO(EIP-4844): Coinbase boot node
 	}
 	OverrideBeaconNetworkConfig(cfg)
