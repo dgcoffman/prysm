@@ -9,6 +9,10 @@ import (
 	types "github.com/prysmaticlabs/prysm/v3/consensus-types/primitives"
 )
 
+type DataAvailability interface {
+	IsDataAvailable(ctx context.Context, root [32]byte) error
+}
+
 // ForkChoicer represents the full fork choice interface composed of all the sub-interfaces.
 type ForkChoicer interface {
 	HeadRetriever        // to compute head.

@@ -487,7 +487,7 @@ func sidecarVerifier(blks []interfaces.SignedBeaconBlock) func(*p2ppb.BlobsSidec
 			if bRoot != bytesutil.ToBytes32(sidecar.BeaconBlockRoot) {
 				continue
 			}
-			if err := blob.ValidateBlobsSidecar(b.Block().Slot(), bRoot, blobKzgs, sidecar); err != nil {
+			if err := blobs.ValidateBlobsSidecar(b.Block().Slot(), bRoot, blobKzgs, sidecar); err != nil {
 				return errors.Wrap(errInvalidSidecar, err.Error())
 			}
 			return nil

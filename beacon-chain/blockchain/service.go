@@ -32,6 +32,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v3/beacon-chain/state/stategen"
 	"github.com/prysmaticlabs/prysm/v3/config/features"
 	"github.com/prysmaticlabs/prysm/v3/config/params"
+	"github.com/prysmaticlabs/prysm/v3/consensus-types/blobs"
 	"github.com/prysmaticlabs/prysm/v3/consensus-types/blocks"
 	"github.com/prysmaticlabs/prysm/v3/consensus-types/interfaces"
 	types "github.com/prysmaticlabs/prysm/v3/consensus-types/primitives"
@@ -497,10 +498,14 @@ func (d *dbDataAvailability) IsDataAvailable(ctx context.Context, root [32]byte)
 	if err != nil {
 		return err
 	}
-	if err := wrapper.BeaconBlockIsNil(b); err != nil {
+	if err := blocks.BeaconBlockIsNil(b); err != nil {
 		return err
 	}
-	if !blob.BlockContainsKZGs(b.Block()) {
+	hasBlob, err := blobs.BlockContainsKZGs(b.Block())
+	if err != nil {
+		return err
+	}
+	if !hasBlob {
 		// no sidecar referenced. We have all the data we need
 		return nil
 	}
@@ -517,5 +522,5 @@ func (d *dbDataAvailability) IsDataAvailable(ctx context.Context, root [32]byte)
 	if sidecar.BeaconBlockSlot != b.Block().Slot() {
 		return errors.New("blobs sidecar is unavailable")
 	}
-	return blob.ValidateBlobsSidecar(b.Block().Slot(), root, kzgs, sidecar)
+	return blobs.ValidateBlobsSidecar(b.Block().Slot(), root, kzgs, sidecar)
 }
