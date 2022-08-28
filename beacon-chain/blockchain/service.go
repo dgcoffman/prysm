@@ -210,9 +210,9 @@ func (s *Service) StartFromSavedState(saved state.BeaconState) error {
 	var forkChoicer f.ForkChoicer
 	fRoot := s.ensureRootNotZeros(bytesutil.ToBytes32(finalized.Root))
 	if features.Get().EnableForkChoiceDoublyLinkedTree {
-		forkChoicer = doublylinkedtree.New(NewDBDataAvailability(s.cfg.BeaconDB))
+		forkChoicer = doublylinkedtree.New(NewDBDataAvailability(s.cfg.BeaconDB, s.genesisTime))
 	} else {
-		forkChoicer = protoarray.New(NewDBDataAvailability(s.cfg.BeaconDB))
+		forkChoicer = protoarray.New(NewDBDataAvailability(s.cfg.BeaconDB, s.genesisTime))
 	}
 	s.cfg.ForkChoiceStore = forkChoicer
 	if err := forkChoicer.UpdateJustifiedCheckpoint(&forkchoicetypes.Checkpoint{Epoch: justified.Epoch,
@@ -521,11 +521,12 @@ func spawnCountdownIfPreGenesis(ctx context.Context, genesisTime time.Time, db d
 }
 
 type dbDataAvailability struct {
-	db db.ReadOnlyDatabase
+	db      db.ReadOnlyDatabase
+	genesis time.Time
 }
 
-func NewDBDataAvailability(db db.ReadOnlyDatabase) f.DataAvailability {
-	return &dbDataAvailability{db}
+func NewDBDataAvailability(db db.ReadOnlyDatabase, genesis time.Time) f.DataAvailability {
+	return &dbDataAvailability{db, genesis}
 }
 
 func (d *dbDataAvailability) IsDataAvailable(ctx context.Context, root [32]byte) error {
@@ -536,6 +537,13 @@ func (d *dbDataAvailability) IsDataAvailable(ctx context.Context, root [32]byte)
 	if err := wrapper.BeaconBlockIsNil(b); err != nil {
 		return err
 	}
+
+	blockEpoch := slots.ToEpoch(b.Block().Slot())
+	currentEpoch := slots.EpochsSinceGenesis(d.genesis)
+	if currentEpoch.Sub(uint64(blockEpoch)) > params.BeaconNetworkConfig().MinEpochsForBlobsSidecarsRequest {
+		return nil
+	}
+
 	if !blob.BlockContainsKZGs(b.Block()) {
 		// no sidecar referenced. We have all the data we need
 		return nil

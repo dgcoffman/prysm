@@ -23,6 +23,7 @@ import (
 	"github.com/prysmaticlabs/prysm/encoding/bytesutil"
 	ethpb "github.com/prysmaticlabs/prysm/proto/prysm/v1alpha1"
 	p2ppb "github.com/prysmaticlabs/prysm/proto/prysm/v1alpha1"
+	"github.com/prysmaticlabs/prysm/time/slots"
 	"github.com/sirupsen/logrus"
 	"go.opencensus.io/trace"
 )
@@ -310,7 +311,7 @@ func (f *blocksFetcher) fetchBlocksFromPeer(
 	for i := 0; i < len(peers); i++ {
 		if blocks, err = f.requestBlocks(ctx, req, peers[i]); err == nil {
 			if sidecars, err = f.requestSidecars(ctx, sidecarReq, peers[i], blocks); err == nil {
-				if err = checkBlocksForAvailableSidecars(blocks, sidecars); err == nil {
+				if err = checkBlocksForAvailableSidecars(f.chain.GenesisTime(), blocks, sidecars); err == nil {
 					f.p2p.Peers().Scorers().BlockProviderScorer().Touch(peers[i])
 					return blocks, sidecars, peers[i], err
 				}
@@ -438,14 +439,22 @@ func (f *blocksFetcher) waitForBandwidth(pid peer.ID) error {
 	return nil
 }
 
-func checkBlocksForAvailableSidecars(blks []interfaces.SignedBeaconBlock, sidecars []*ethpb.BlobsSidecar) error {
+func checkBlocksForAvailableSidecars(genesis time.Time, blks []interfaces.SignedBeaconBlock, sidecars []*ethpb.BlobsSidecar) error {
 	for _, b := range blks {
 		if blocks.IsPreEIP4844Version(b.Version()) {
 			continue
 		}
+
+		blockEpoch := slots.ToEpoch(b.Block().Slot())
+		currentEpoch := slots.EpochsSinceGenesis(genesis)
+		if currentEpoch.Sub(uint64(blockEpoch)) > params.BeaconNetworkConfig().MinEpochsForBlobsSidecarsRequest {
+			continue
+		}
+
 		if blobKzgs, _ := b.Block().Body().BlobKzgs(); len(blobKzgs) == 0 {
 			continue
 		}
+
 		bRoot, err := b.Block().HashTreeRoot()
 		if err != nil {
 			return err

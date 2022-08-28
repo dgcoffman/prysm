@@ -357,10 +357,11 @@ func (b *BeaconNode) Close() {
 }
 
 func (b *BeaconNode) startForkChoice() {
+	genesisTime := time.Unix(int64(b.finalizedStateAtStartUp.GenesisTime()), 0) // lint:ignore uintcast -- Genesis time will not exceed int64 in your lifetime.
 	if features.Get().EnableForkChoiceDoublyLinkedTree {
-		b.forkChoiceStore = doublylinkedtree.New(blockchain.NewDBDataAvailability(b.db))
+		b.forkChoiceStore = doublylinkedtree.New(blockchain.NewDBDataAvailability(b.db, genesisTime))
 	} else {
-		b.forkChoiceStore = protoarray.New(blockchain.NewDBDataAvailability(b.db))
+		b.forkChoiceStore = protoarray.New(blockchain.NewDBDataAvailability(b.db, genesisTime))
 	}
 }
 
